@@ -1,0 +1,41 @@
+---
+- hosts: nodejs
+  become: yes
+  vars_files:
+    - credentials.yml
+    - app_settings.yml
+  tasks:
+    - include_tasks: epel-task.yml
+    - name: Install nodejs server
+      yum: name={{ item }} state=present
+      with_items:
+        - nodejs
+        - npm
+        - git
+    - name: Download the application from the GitHub repository
+      git:
+        repo: https://github.com/gugui3z24/meanstacktutorial
+        dest: "{{ install_path }}"
+        force: yes
+
+    - name: Running npm against package.json
+      npm:
+        path: "{{ install_path }}"
+        state: present
+
+    - name: Install the forever package
+      npm: 
+        name: forever
+        state: present
+        global: yes
+
+    - name: configuring the application
+      template:
+        src: server.js.j2
+        dest: "{{ install_path }}/server.js"
+
+    - name: Restart nodejs
+      shell: >
+        forever stop {{ install_path }}/server.js;
+        forever start {{ install_path }}/server.js;
+

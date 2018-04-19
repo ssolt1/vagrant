@@ -1,0 +1,3 @@
+install_path: /opt/meanapp
+app_port: 3000
+db_name: meandb

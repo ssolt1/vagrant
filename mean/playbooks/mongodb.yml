@@ -1,0 +1,100 @@
+---
+- hosts: mongodb
+  become: yes
+  handlers: 
+    - name: restart mongod
+      service: name=mongod state=restarted
+  vars_files:
+    - credentials.yml
+    - app_settings.yml
+  tasks:
+    - include_tasks: epel-task.yml
+    
+    - name: Install pip
+      yum: name=python-pip state=present
+
+    - name: Install pymongo
+      pip: name=pymongo state=present
+
+    - name: Add the MongoDB repository
+      yum_repository: 
+        name: mongodb-org-3.4
+        description: MongoDB repository
+        baseurl: https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.4/x86_64/ 
+        enabled: yes
+        gpgkey: https://www.mongodb.org/static/pgp/server-3.4.asc
+        gpgcheck: yes
+
+    - name: Install MongoDB package
+      yum:
+        name: mongodb-org
+        state: present
+
+    - name: Start and enable the service
+      service:
+        name: mongod
+        state: started
+        enabled: yes
+
+    - name: Is mongod root account created?
+      stat: path=/root/.rootCreated
+      register: rootCreated         # register the output of the stat cmd
+
+    - name: Create the admin account
+      mongodb_user:
+        database: admin
+        name: root
+        password: "{{ admin_password }}"
+        roles: root
+        state: present
+      when: rootCreated.stat.exists == false    # only create root act. if this file does not exist (false).
+
+    - name: Create the .rootCreated file  # copy cmd can create and add content to files.
+      copy:
+        content: ""
+        dest: /root/.rootCreated
+        force: no     # don't overwrite if file exists. 
+
+    - name: Upload the configuration file
+      copy:
+        src: files/mongod.conf
+        dest: /etc/mongod.conf
+      notify: restart mongod
+
+    - name: Is the application user created?
+      shell: mongo admin -u root -p{{ admin_password }} --eval "db.system.users.find()"
+      register: userCreated
+      changed_when: false  # won't report a change in the output of playbook run.
+    
+    - name: Create the user, password and database for the application
+      mongodb_user:
+        database: "{{ db_name }}"
+        login_user: root
+        login_password: "{{ admin_password }}"
+        name: "{{ app_user }}"
+        password: "{{ app_password }}"
+        roles: dbOwner
+        state: present
+      when: "app_user not in userCreated.stdout"    # if "app_user name" ! in cmd stdout then run block of code and create db, app_user, 
+
+    - name: Is the seed record created?
+      shell:  mongo {{ db_name }} -u {{ app_user }} -p{{ app_password }} --eval 'db.users.find()'
+      register: seedCreated
+      changed_when: false
+
+    - name: Add the seed record
+      shell: >
+        mongo {{ db_name }} -u {{ app_user }} -p{{ app_password }} --eval 'db.users.insert(
+              {
+                "name": "John Doe",
+                "email": "stevesolt@gmail.com",
+                "password": "password",
+                "username": "stevesolt",
+                "permission": "admin",
+                "active": true
+              }
+            )'
+      when: "'stevesolt' not in seedCreated.stdout"
+
+
+    

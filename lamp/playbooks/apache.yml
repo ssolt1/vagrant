@@ -1,0 +1,128 @@
+---
+- hosts: webservers
+  become: yes
+  handlers:
+    - name: restart Apache
+      service: name=apache2 state=restarted
+  tasks:
+    - name: Install Apache2
+      apt:
+        name: apache2
+        update_cache: yes
+        state: present
+    - name: Ensure that Apache is running and will start at system boot
+      service: 
+        name: apache2
+        state: started
+        enabled: yes
+
+    - name: Add PHP 7.1 repository
+      apt_repository:
+        repo: 'ppa:ondrej/php'
+        state: present
+    - name: Install PHP 7.1 and the required packages for Laravel
+      apt: name='{{ item }}' state=present update_cache=yes
+      with_items:
+        - php7.1
+        - php7.1-xml
+        - php7.1-mbstring
+        - php7.1-mysql
+        - php7.1-json
+        - php7.1-curl
+        - php7.1-cli
+        - php7.1-common
+        - php7.1-mcrypt
+        - php7.1-gd
+        - libapache2-mod-php7.1
+        - php7.1-zip
+        - ntp
+      notify: restart Apache
+
+    - name: Upload a test.php file to the remote web directory
+      copy:
+        src: files/test.php
+        dest: /var/www/html/
+
+    - name: Install composer
+      shell: curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+      args:
+          creates: /usr/local/bin/composer
+
+    # composer create-project --prefer-dist laravel/laravel blog
+    - name: Register the stat of the Laravel directory
+      stat:
+        path: /var/www/html/blog
+      register: dirstat
+      
+#    - name: Ensure that the blog directory is empty
+#      file:
+#        path: /var/www/html/blog
+#        state: absent
+    # This task is not idempotent
+    - name: Install Laravel 5.5
+      composer: 
+        command: create-project
+        arguments: laravel/laravel blog
+        working_dir: /var/www/html
+        prefer-dist: yes
+      when: dirstat.stat.exists == false
+
+    - name: Register the stat of the storage directory
+      stat:
+        path: /var/www/html/blog/storage
+      register: storagestat
+
+    - name: Ensure that the storage directory is having 777 permissions
+      file:
+        path: /var/www/html/blog/storage
+        state: directory
+        recurse: yes
+        mode: 0777
+      when: storagestat.stat.mode !='0777'
+
+    - name: Change the Apache configuration to point to Laravel public directory
+      lineinfile:
+        path: /etc/apache2/sites-available/000-default.conf
+        regexp: 'DocumentRoot /var/www/html'
+        line: 'DocumentRoot /var/www/html/blog/public'
+      notify: restart Apache
+
+    - name: install the MySql client package
+      apt: name=mysql-client state=present
+
+    - name: Upload the environment file to Laravel
+      copy:
+        src: files/environment
+        dest: /var/www/html/blog/.env
+        backup: yes
+        
+    - name: Upload the web.php to Laravel
+      copy:
+        src: files/web.php
+        dest: /var/www/html/blog/routes/web.php
+        backup: yes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+         

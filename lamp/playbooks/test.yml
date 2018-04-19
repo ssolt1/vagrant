@@ -1,0 +1,22 @@
+---
+- hosts: web1
+  tasks:
+    - name: Register the stat of the Laravel directory
+      stat:
+        path: /var/www/html/blog
+      register: dirstat
+
+    - name: Is Laravel installed?
+      debug: msg="Laravel is insalled"
+      when: dirstat.stat.isdir
+
+    #- debug: var=dirstat
+    #- debug:
+    #    var: hosts.stdout
+
+#    - name: Echo "We don't have localhost" when we have localhost in /etc/hosts
+#      debug:
+       
+      #  msg: "OK, whe have localhost"
+      #when: "'127.0.0.100' in hosts.stdout"
+      # when like if condition in other langs

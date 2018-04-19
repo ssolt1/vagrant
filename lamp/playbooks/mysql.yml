@@ -1,0 +1,99 @@
+---
+- hosts: db
+  become: yes
+  handlers:
+    - name: restart mysql
+      service: name=mysql state=restarted
+
+#  vars:
+#    root_password: admin123
+  vars_files: 
+    - mysql_staging_vars.yml
+    #- test_vars.json
+    - credential_staging_vars.yml
+  tasks: 
+    - name: Set the db root password
+      debconf:
+        name: mysql-server
+        question: mysql-server/root_password
+        value: "{{ root_password }}"
+        vtype: password
+
+    - name: Confirm the db root password
+      debconf:
+        name: mysql-server
+        question: mysql-server/root_password_again
+        value: "{{ root_password }}"
+        vtype: password
+
+    - name: Install MySql packages
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      with_items:
+        - mysql-server
+        - mysql-client
+        - python-mysqldb
+
+    - name: Ensure that MySql is started and enabled
+      service: 
+        name: mysql
+        state: started
+        enabled: yes
+
+    # Security best practices
+    - name: remove the anonymous accounts
+      mysql_user:
+        name: ""
+        state: absent
+        login_user: root
+        login_password: "{{ root_password }}"
+        host_all: yes
+
+    - name: Remove the test database
+      mysql_db:
+        db: test
+        state: absent
+        login_user: root
+        login_password: "{{ root_password }}"
+
+    - name: Allow connections from remote hosts
+      lineinfile:
+        path: /etc/mysql/mysql.conf.d/mysqld.cnf
+        regexp: 'bind-address\s*='
+        line: 'bind-address = *'
+      notify: restart mysql
+
+    - name: Create a database for Lravel
+      mysql_db:
+        db: "{{ database.name }}"
+        state: present
+        login_user: root
+        login_password: "{{ root_password }}"
+
+    - name: Create the datbase user
+      mysql_user:
+        name: laravel
+        password: laravel
+        priv: '{{ database.name }}.*:ALL,GRANT'
+        host: '%'
+        state: present
+        login_user: root
+        login_password: "{{ root_password }}"
+
+    - name: Upload the create_table.sql fiel to the host
+      copy:
+        src: files/{{ database.sql_file }}
+        dest: /tmp/{{ database.sql_file }}
+
+    - name: Execute the commands inside create_table.sql against the DB
+      mysql_db:
+        name: "{{ database.name }}"
+        state: import
+        target: /tmp/{{ database.sql_file }}
+        login_user: laravel
+        login_password: laravel
+
+
+    

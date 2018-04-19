@@ -1,0 +1,24 @@
+# lamp project drawbacks
+
+1 - Redundancy < passwords repeated several times.
+    use variables - 
+2 - Root passwd saved in clear text in files - use ansible-vault
+# to encrypt password file
+$ ansible-vault encrypt credential_staging_vars.yml # enter passwd to encryptdecrypt passwd_file
+$ cat credential_staging_vars.yml # to see the file is encrypted
+$ ansible-vault decrypt --ask-vault-pass credential_staging_vars.yml 
+$ cat credential_staging_vars.yml # show decrypted file
+# to use interactively in ansible-playbook cmd
+$ ansible-playbook playbooks/mysql.yml --ask-vault-pass # will be prompted for encrypt/decrypt passwd
+# create hidden file for encrypt/decrypt passwd under - ~/.ansible/<vault_passwd_file>
+# Use in ansible-playbook cmd, use '--vault-password-file ~/.ansible/vault_pass' 
+$ ansible-playbook /vagrant/playbooks/mysql.yml --vault-password-file ~/.ansible/vault_pass
+
+3 - Lacks idempotence
+
+register: #< stores the stdout/stderr and exit code of the command it is registering
+debug: msg or var=?
+when: #< is like if stmt in other langs
+stat: retreive file or file system status via path: the store the values in a register value.
+
+

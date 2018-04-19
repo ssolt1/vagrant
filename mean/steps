@@ -1,0 +1,76 @@
+create vagrant directory - mean
+
+edit Vagrant file, add hosts info.
+
+vagrant up
+
+vagrant ssh ansible
+
+yum install -y ansible
+
+add/edit host info in /etc/hosts
+192.168.33.20   nodejs
+192.168.33.30   mongodb
+192.168.33.100  nginx
+
+ssh-keygen
+
+ssh-copy-id
+
+# create inventory in shared /vagrant/ directory
+nodejs
+mongodb
+nginx
+
+# issue was I accidentilally deleted a ':' at the end of 'processManagement:' line in the copied .conf file.
+RUNNING HANDLER [restart mongod] *******************************************************************
+fatal: [mongodb]: FAILED! => {"changed": false, "msg": "Unable to restart service mongod: Job for mongod.service failed because the control process exited with error code. See \"systemctl status mongod.service\" and \"journalctl -xe\" for details.\n"}
+	to retry, use: --limit @/vagrant/playbooks/mongodb.retry
+
+changed_when: < controls reporting changes
+
+mongo admin -u root -p
+
+db.system.users.find()
+{ "_id" : "admin.root", "user" : "root", "db" : "admin", "credentials" : { "SCRAM-SHA-1" : { "iterationCount" : 10000, "salt" : "FeDo+42z07FAA+/jBPb4cQ==", "storedKey" : "lWUAhAcMLI2YJrGXjGiNIespR/g=", "serverKey" : "bUZeFgY9tp+OSODljmL+AKK7Tes=" } }, "roles" : [ { "role" : "root", "db" : "admin" } ] }
+
+# need to run this cmd in ansible
+mongo admin -u root -pmypassword --eval "db.system.users.find()"
+
+[vagrant@mongodb ~]$ mongo admin -u root -pmypassword --eval "db.system.users.find()"
+MongoDB shell version v3.4.14
+connecting to: mongodb://127.0.0.1:27017/admin
+MongoDB server version: 3.4.14
+{ "_id" : "admin.root", "user" : "root", "db" : "admin", "credentials" : { "SCRAM-SHA-1" : { "iterationCount" : 10000, "salt" : "Hygopv1qhyaQb6krpSuh6w==", "storedKey" : "7UB9kqGy781E5CJOHWi0vA90So4=", "serverKey" : "LjeCGdSfF+TRfdcVfXSMAzSB4Oo=" } }, "roles" : [ { "role" : "root", "db" : "admin" } ] }
+{ "_id" : "meandb.nodeuser", "user" : "nodeuser", "db" : "meandb", "credentials" : { "SCRAM-SHA-1" : { "iterationCount" : 10000, "salt" : "kCyzX8Q5FN2NfheV217wVg==", "storedKey" : "z9GYqR3BVWp2RLxlVbXtedj8+E4=", "serverKey" : "oNVhlrzULtHcpD5okO9njFBirP4=" } }, "roles" : [ { "role" : "dbOwner", "db" : "meandb" } ] }
+
+c8fed00eb2e87f1cee8e90ebbe870c190ac3848c
+c8fed00eb2e87f1cee8e90ebbe870c190ac3848c
+
+# orginal
+"password": "$2a$10$bbMVjYYa6piy.1.1wUvUeOqsbE8GjCas1YtgnGXXJOcb/NQ1uz99i",
+tried just "password": "password",
+
+http://192.168.33.20:3000
+
+
+nodepassword
+
+MongoDB shell version v3.4.14
+Enter password: 
+connecting to: mongodb://127.0.0.1:27017/admin
+MongoDB server version: 3.4.14
+Welcome to the MongoDB shell.
+For interactive help, type "help".
+For more comprehensive documentation, see
+	http://docs.mongodb.org/
+Questions? Try the support group
+	http://groups.google.com/group/mongodb-user
+Server has startup warnings: 
+2018-04-18T00:26:34.950+0000 I CONTROL  [initandlisten] 
+2018-04-18T00:26:34.950+0000 I CONTROL  [initandlisten] ** WARNING: /sys/kernel/mm/transparent_hugepage/enabled is 'always'.
+2018-04-18T00:26:34.950+0000 I CONTROL  [initandlisten] **        We suggest setting it to 'never'
+2018-04-18T00:26:34.950+0000 I CONTROL  [initandlisten] 
+2018-04-18T00:26:34.950+0000 I CONTROL  [initandlisten] ** WARNING: /sys/kernel/mm/transparent_hugepage/defrag is 'always'.
+2018-04-18T00:26:34.950+0000 I CONTROL  [initandlisten] **        We suggest setting it to 'never'
+2018-04-18T00:26:34.950+0000 I CONTROL  [initandlisten]
