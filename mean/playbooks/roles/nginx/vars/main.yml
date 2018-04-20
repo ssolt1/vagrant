@@ -1,0 +1,12 @@
+---
+# vars file for nginx
+servers: 
+  - frontend_port: 80
+    backend_port: 3000
+    backend_server: 192.168.33.20
+
+  - frontend_port: 8080
+    backend_port: 30001
+    backend_server: 192.168.33.50
+
+  

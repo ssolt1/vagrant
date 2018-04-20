@@ -1,0 +1,14 @@
+{% for s in servers %}
+    server {
+        listen {{ s.frontend_port }};
+
+        location / {
+            proxy_pass http://{{ s.backend_server }}:{{ s.backend_port }};
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_cache_bypass $http_upgrade;
+        }
+    }
+{% endfor %}
